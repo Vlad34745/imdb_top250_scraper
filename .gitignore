@@ -1,0 +1,13 @@
+# Сервісні ключі та паролі (Конфіденційні дані)
+.env
+credentials.json
+
+# Віртуальне оточення Python
+venv/
+.venv/
+env/
+
+# Кеш Python та системні файли
+__pycache__/
+*.pyc
+.DS_Store
