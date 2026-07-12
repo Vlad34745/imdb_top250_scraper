@@ -20,7 +20,8 @@ class TelemartParser:
         if page_num == 1:
             url = self.base_url
         else:
-            url = f"{self.base_url}f/page={page_num}/"
+            # Змінюємо формат пагінації на правильний query-параметр
+            url = f"{self.base_url}?page={page_num}"
             
         try:
             # Обов'язково follow_redirects=True, щоб обходити 301 редиректи
