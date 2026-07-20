@@ -1,42 +1,65 @@
-from email import parser
 import logging
-# Зверни увагу на імпорт оновленого класу BookYeParser
-from core.parser import TelemartParser
-from core.cleaner import DataCleaner
-from core.sheets import GoogleSheetsUploader
+import os
+from datetime import datetime
+
+import pandas as pd
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
+
+from core.parser import fetch_page_html, parse_movies
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
 )
+logger = logging.getLogger(__name__)
+
+IMDB_URL = "https://www.imdb.com/chart/top/"
+OUTPUT_DIR = "output"
+
+
+def save_to_excel(movies: list, filename: str) -> None:
+    df = pd.DataFrame(movies)
+    df.columns = ["Rank", "Title", "Year", "Rating", "IMDb ID"]
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    filepath = os.path.join(OUTPUT_DIR, filename)
+
+    df.to_excel(filepath, index=False, sheet_name="IMDb Top 250")
+
+    from openpyxl import load_workbook
+    wb = load_workbook(filepath)
+    ws = wb.active
+
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or "")) for cell in col)
+        col_letter = get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+    wb.save(filepath)
+    logger.info(f"Saved {len(movies)} movies to {filepath}")
+
 
 def main():
-    logging.info("--- Starting E-Commerce Scraper Pipeline ---")
-    
-    parser = TelemartParser()
-    cleaner = DataCleaner()
-    uploader = GoogleSheetsUploader()
-    
-    raw_data = parser.scrape_all()
-    
-    if not raw_data:
-        logging.error("No data scraped. Exiting pipeline.")
+    html = fetch_page_html(IMDB_URL)
+    movies = parse_movies(html, limit=250)
+
+    if not movies:
+        logger.warning("No movies were parsed. Nothing to save.")
         return
-        
-    logging.info(f"Successfully scraped {len(raw_data)} raw products.")
-    
-    logging.info("Running data cleaning and analysis via Pandas...")
-    cleaned_df = cleaner.clean_scraped_data(raw_data)
-    
-    print("\n--- Cleaned Data Preview (Sorted by Price) ---")
-    print(cleaned_df.head(10))
-    print("----------------------------------------------\n")
-    
-    logging.info("Uploading polished data to Google Sheets...")
-    uploader.upload_dataframe(cleaned_df, sheet_name="Scraped Products")
-    
-    logging.info("--- Pipeline Finished Successfully! ---")
+
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+    filename = f"imdb_top250_{timestamp}.xlsx"
+    save_to_excel(movies, filename)
+
 
 if __name__ == "__main__":
     main()
