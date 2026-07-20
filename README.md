@@ -10,9 +10,10 @@ A Python web scraper that collects the IMDb Top 250 movies (rank, title, year, r
 
 ## ✨ Features
 - Bypasses basic anti-bot blocking by rendering the page through a real (headless) Chrome instance instead of raw HTTP requests
+- Uses incremental scrolling to reliably trigger the site's lazy-loaded content, ensuring all 250 entries are captured consistently on every run instead of relying on a fixed wait time
 - Robust parsing using semantic CSS classes rather than auto-generated ones where possible, to reduce breakage when the site's styling changes
 - Automatically filters out non-movie navigation links that share the same markup as movie entries (e.g. "Popular charts", "Movie news")
-- Exports a clean, styled Excel report with a formatted header row and auto-sized columns
+- Exports a clean, styled Excel report with a formatted header row, proper numeric types for year/rating, and auto-sized columns
 
 ## 📋 Output columns
 | Column | Description |
@@ -26,29 +27,29 @@ A Python web scraper that collects the IMDb Top 250 movies (rank, title, year, r
 ## 🚀 How to Run Locally
 
 1. **Clone the repository:**
-   ```bash
+```bash
    git clone https://github.com/Vlad34745/imdb_top250_scraper.git
    cd imdb_top250_scraper
-   ```
+```
 
 2. **Create and activate a virtual environment:**
-   ```bash
+```bash
    python -m venv venv
    # Windows
    venv\Scripts\activate
    # macOS/Linux
    source venv/bin/activate
-   ```
+```
 
 3. **Install dependencies:**
-   ```bash
+```bash
    pip install -r requirements.txt
-   ```
+```
 
 4. **Run the scraper:**
-   ```bash
+```bash
    python main.py
-   ```
+```
 
 5. **Output:**
    A file named `imdb_top250_<date>.xlsx` will be created in the `output/` folder.
@@ -65,4 +66,4 @@ imdb_top250_scraper/
 ```
 
 ## ⚠️ Notes on scope and reliability
-This project was built for educational and portfolio purposes to demonstrate a real, working scraping workflow — including handling anti-bot protection and adapting parsing logic when a site's markup changes. It scrapes a single public chart page and does not perform bulk or continuous scraping. As with any scraper, the parsing logic is tied to IMDb's current page structure and may need adjustment if the site's layout changes in the future.
+This project was built for educational and portfolio purposes to demonstrate a real, working scraping workflow — including handling anti-bot protection, JavaScript-driven lazy loading, and adapting parsing logic when a site's markup changes. It scrapes a single public chart page and does not perform bulk or continuous scraping. As with any scraper, the parsing logic is tied to IMDb's current page structure and may need adjustment if the site's layout changes in the future.

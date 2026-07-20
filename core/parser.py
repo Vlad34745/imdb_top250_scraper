@@ -11,11 +11,11 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def fetch_page_html(url: str, wait_seconds: int = 3) -> str:
+def fetch_page_html(url: str, wait_seconds: int = 3, scroll_pause: float = 1.0) -> str:
     """
     Loads a page through headless Chrome (Selenium) and returns the rendered HTML.
-    Used instead of a plain requests call, since the target site blocks
-    simple HTTP requests via anti-bot protection.
+    Scrolls down repeatedly to force lazy-loaded content (like the full
+    IMDb Top 250 list) to render before capturing the final HTML.
     """
     options = Options()
     options.add_argument("--headless=new")
@@ -31,6 +31,18 @@ def fetch_page_html(url: str, wait_seconds: int = 3) -> str:
         logger.info(f"Fetching page: {url}")
         driver.get(url)
         time.sleep(wait_seconds)
+
+        # Scroll down repeatedly until the page height stops growing,
+        # which means all lazy-loaded items have been rendered.
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        while True:
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(scroll_pause)
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
+            last_height = new_height
+
         html = driver.page_source
         logger.info(f"Successfully fetched {len(html)} characters")
         return html
@@ -68,11 +80,16 @@ def parse_movies(html: str, limit: int = 250) -> list:
             if metadata_div:
                 first_li = metadata_div.find("li")
                 if first_li:
-                    year = first_li.get_text(strip=True)
+                    year_text = first_li.get_text(strip=True)
+                    year = int(year_text) if year_text.isdigit() else None
 
             rating_elem = container.find("span", class_="ipc-rating-star--rating")
             if rating_elem:
-                rating = rating_elem.get_text(strip=True)
+                rating_text = rating_elem.get_text(strip=True)
+                try:
+                    rating = float(rating_text)
+                except ValueError:
+                    rating = None
 
         movies.append({
             "rank": rank,
