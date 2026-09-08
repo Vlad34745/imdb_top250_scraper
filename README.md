@@ -10,7 +10,7 @@ A Python web scraper that collects the IMDb Top 250 movies (rank, title, year, r
 - **Data handling & export:** Pandas, OpenPyXL
 - **Driver management:** webdriver-manager (automatically downloads the correct ChromeDriver version)
 - **Testing:** pytest, pytest-cov
-- **CI:** GitHub Actions (runs the test suite on every push/PR across Python 3.10–3.12)
+- **CI:** GitHub Actions (runs the test suite on every push/PR across Python 3.12–3.13 — the pinned `numpy` version in `requirements.txt` requires Python 3.12+)
 
 ## ✨ Features
 - Bypasses basic anti-bot blocking by rendering the page through a real (headless) Chrome instance instead of raw HTTP requests
