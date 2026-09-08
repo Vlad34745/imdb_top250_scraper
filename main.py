@@ -1,12 +1,10 @@
+import argparse
 import logging
-import os
+import sys
 from datetime import datetime
 
-import pandas as pd
-from openpyxl.styles import Font, PatternFill, Alignment
-from openpyxl.utils import get_column_letter
-
-from core.parser import fetch_page_html, parse_movies
+from core.exporter import save_to_excel
+from core.parser import PageFetchError, fetch_page_html, parse_movies
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,48 +16,55 @@ IMDB_URL = "https://www.imdb.com/chart/top/"
 OUTPUT_DIR = "output"
 
 
-def save_to_excel(movies: list, filename: str) -> None:
-    df = pd.DataFrame(movies)
-    df.columns = ["Rank", "Title", "Year", "Rating", "IMDb ID"]
-
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    filepath = os.path.join(OUTPUT_DIR, filename)
-
-    df.to_excel(filepath, index=False, sheet_name="IMDb Top 250")
-
-    from openpyxl import load_workbook
-    wb = load_workbook(filepath)
-    ws = wb.active
-
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-
-    for cell in ws[1]:
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = Alignment(horizontal="center")
-
-    for col in ws.columns:
-        max_len = max(len(str(cell.value or "")) for cell in col)
-        col_letter = get_column_letter(col[0].column)
-        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
-
-    wb.save(filepath)
-    logger.info(f"Saved {len(movies)} movies to {filepath}")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Scrape the IMDb Top 250 chart into an Excel file.")
+    parser.add_argument("--url", default=IMDB_URL, help="IMDb chart URL to scrape (default: Top 250)")
+    parser.add_argument("--limit", type=int, default=250, help="Max number of movies to keep (default: 250)")
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Output .xlsx path (default: output/imdb_top250_<date>.xlsx)",
+    )
+    parser.add_argument("--wait-seconds", type=int, default=3, help="Initial page-load wait (default: 3)")
+    parser.add_argument("--scroll-pause", type=float, default=1.0, help="Pause between scrolls (default: 1.0)")
+    parser.add_argument("--max-retries", type=int, default=3, help="Retries on fetch failure (default: 3)")
+    return parser.parse_args()
 
 
-def main():
-    html = fetch_page_html(IMDB_URL)
-    movies = parse_movies(html, limit=250)
+def main() -> int:
+    args = parse_args()
+
+    try:
+        html = fetch_page_html(
+            args.url,
+            wait_seconds=args.wait_seconds,
+            scroll_pause=args.scroll_pause,
+            max_retries=args.max_retries,
+        )
+    except PageFetchError:
+        logger.error("Could not fetch the page after retries. Aborting.", exc_info=True)
+        return 1
+
+    movies = parse_movies(html, limit=args.limit)
 
     if not movies:
         logger.warning("No movies were parsed. Nothing to save.")
-        return
+        return 1
 
-    timestamp = datetime.now().strftime("%Y-%m-%d")
-    filename = f"imdb_top250_{timestamp}.xlsx"
-    save_to_excel(movies, filename)
+    if args.output:
+        filepath = args.output
+    else:
+        timestamp = datetime.now().strftime("%Y-%m-%d")
+        filepath = f"{OUTPUT_DIR}/imdb_top250_{timestamp}.xlsx"
+
+    try:
+        save_to_excel(movies, filepath)
+    except Exception:
+        logger.error(f"Failed to save results to {filepath}", exc_info=True)
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
