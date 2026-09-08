@@ -1,6 +1,7 @@
 # IMDb Top 250 Scraper
 
 ![CI](https://github.com/Vlad34745/imdb_top250_scraper/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/Vlad34745/imdb_top250_scraper/graph/badge.svg)](https://codecov.io/gh/Vlad34745/imdb_top250_scraper)
 
 A Python web scraper that collects the IMDb Top 250 movies (rank, title, year, rating, and IMDb ID) and exports the results to a styled Excel report.
 
