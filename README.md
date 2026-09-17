@@ -11,7 +11,8 @@ A Python web scraper that collects the IMDb Top 250 movies (rank, title, year, r
 - **Data handling & export:** Pandas, OpenPyXL
 - **Driver management:** webdriver-manager (automatically downloads the correct ChromeDriver version)
 - **Testing:** pytest, pytest-cov
-- **CI:** GitHub Actions (runs the test suite on every push/PR across Python 3.12–3.13 — the pinned `numpy` version in `requirements.txt` requires Python 3.12+)
+- **Linting:** ruff
+- **CI:** GitHub Actions (lint + test suite on every push/PR across Python 3.12–3.13; Dependabot opens a PR automatically when a dependency has an update)
 
 ## ✨ Features
 - Bypasses basic anti-bot blocking by rendering the page through a real (headless) Chrome instance instead of raw HTTP requests
@@ -75,10 +76,11 @@ python main.py --limit 50 --output output/top50.xlsx --wait-seconds 5 --max-retr
 | `--max-retries` | `3` | Retries on fetch failure |
 
 ## 🧪 Testing
-Unit tests cover the parsing logic (using a local HTML fixture — no live IMDb request needed) and the Excel export.
+Unit tests cover the parsing logic (including the retry mechanism, using mocked Selenium calls — no live IMDb request needed), the Excel export, and the CLI orchestration in `main.py`.
 ```bash
 pip install -r requirements-dev.txt
 pytest tests/ -v --cov=core --cov-report=term-missing
+ruff check .
 ```
 
 ## 📐 Project Structure
@@ -92,11 +94,17 @@ imdb_top250_scraper/
 │   ├── fixtures/
 │   │   └── sample_imdb.html
 │   ├── test_parser.py
-│   └── test_exporter.py
-├── .github/workflows/ci.yml
+│   ├── test_parser_retry.py
+│   ├── test_exporter.py
+│   └── test_main.py
+├── .github/
+│   ├── workflows/ci.yml
+│   └── dependabot.yml
 ├── main.py               # CLI entry point: orchestrates fetching, parsing, export
 ├── requirements.txt
 ├── requirements-dev.txt
+├── pyproject.toml        # ruff configuration
+├── LICENSE
 └── output/               # Generated Excel reports (not committed to git)
 ```
 
