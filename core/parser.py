@@ -33,13 +33,26 @@ def fetch_page_html(
     scroll_pause: float = 1.0,
     max_retries: int = 3,
 ) -> str:
-    """
-    Loads a page through headless Chrome (Selenium) and returns the rendered HTML.
-    Scrolls down repeatedly to force lazy-loaded content (like the full
-    IMDb Top 250 list) to render before capturing the final HTML.
+    """Loads a page through headless Chrome (Selenium) and returns the rendered HTML.
 
-    Retries up to `max_retries` times on WebDriver/network failures
-    (e.g. transient timeouts, driver crashes) before giving up.
+    Scrolls down repeatedly to force lazy-loaded content (like the full
+    IMDb Top 250 list) to render before capturing the final HTML. Retries
+    up to `max_retries` times on WebDriver/network failures (e.g. transient
+    timeouts, driver crashes) before giving up.
+
+    Args:
+        url: Page URL to fetch.
+        wait_seconds: Seconds to wait after the initial page load, before
+            scrolling starts, to let the first batch of content render.
+        scroll_pause: Seconds to wait between each scroll step.
+        max_retries: Maximum number of fetch attempts before giving up.
+
+    Returns:
+        The fully rendered page HTML (after scrolling to the bottom).
+
+    Raises:
+        PageFetchError: If the page could not be fetched after
+            ``max_retries`` attempts.
     """
     last_error: Exception | None = None
 
@@ -76,9 +89,7 @@ def fetch_page_html(
             if driver is not None:
                 driver.quit()
 
-    raise PageFetchError(
-        f"Failed to fetch {url} after {max_retries} attempts"
-    ) from last_error
+    raise PageFetchError(f"Failed to fetch {url} after {max_retries} attempts") from last_error
 
 
 def _extract_movie(rank: int, elem) -> dict | None:
@@ -126,10 +137,19 @@ def _extract_movie(rank: int, elem) -> dict | None:
 
 
 def parse_movies(html: str, limit: int = 250) -> list:
-    """
-    Extracts rank, title, release year, rating, and IMDb ID for each movie
-    from the IMDb Top 250 page HTML. Non-movie entries (nav links that share
-    the same markup, e.g. "Popular charts") are filtered out.
+    """Extracts rank, title, release year, rating, and IMDb ID for each movie.
+
+    Non-movie entries (nav links that share the same markup as movie titles,
+    e.g. "Popular charts") are filtered out automatically.
+
+    Args:
+        html: Rendered page HTML, as returned by fetch_page_html.
+        limit: Maximum number of title elements to consider (applied before
+            non-movie entries are filtered out).
+
+    Returns:
+        A list of movie dicts (rank, title, year, rating, movie_id), ranked
+        1..N in the order they appeared on the page after filtering.
     """
     soup = BeautifulSoup(html, "html.parser")
     title_elements = soup.find_all("h4", class_="ipc-title__text")

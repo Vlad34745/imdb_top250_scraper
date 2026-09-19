@@ -12,7 +12,17 @@ COLUMN_NAMES = ["Rank", "Title", "Year", "Rating", "IMDb ID"]
 
 
 def save_to_excel(movies: list, filepath: str) -> None:
-    """Writes the movie list to a styled .xlsx file at the given filepath."""
+    """Writes the movie list to a styled .xlsx file at the given filepath.
+
+    Args:
+        movies: List of movie dicts, each with rank, title, year, rating,
+            and movie_id keys (as returned by core.parser.parse_movies).
+        filepath: Destination path for the .xlsx file. Parent directories
+            are created automatically if they don't exist.
+
+    Raises:
+        ValueError: If ``movies`` is empty.
+    """
     if not movies:
         raise ValueError("Cannot export an empty movie list")
 

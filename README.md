@@ -2,6 +2,7 @@
 
 ![CI](https://github.com/Vlad34745/imdb_top250_scraper/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/Vlad34745/imdb_top250_scraper/graph/badge.svg)](https://codecov.io/gh/Vlad34745/imdb_top250_scraper)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A Python web scraper that collects the IMDb Top 250 movies (rank, title, year, rating, and IMDb ID) and exports the results to a styled Excel report.
 
@@ -11,8 +12,9 @@ A Python web scraper that collects the IMDb Top 250 movies (rank, title, year, r
 - **Data handling & export:** Pandas, OpenPyXL
 - **Driver management:** webdriver-manager (automatically downloads the correct ChromeDriver version)
 - **Testing:** pytest, pytest-cov
-- **Linting:** ruff
-- **CI:** GitHub Actions (lint + test suite on every push/PR across Python 3.12–3.13; Dependabot opens a PR automatically when a dependency has an update)
+- **Linting & formatting:** ruff
+- **Security:** pip-audit (checks dependencies for known vulnerabilities on every push)
+- **CI:** GitHub Actions (lint + format check + security audit + test suite on every push/PR across Python 3.12–3.13, with pip caching for faster runs; Dependabot opens a grouped PR automatically when dependencies have updates)
 
 ## ✨ Features
 - Bypasses basic anti-bot blocking by rendering the page through a real (headless) Chrome instance instead of raw HTTP requests
@@ -81,6 +83,8 @@ Unit tests cover the parsing logic (including the retry mechanism, using mocked 
 pip install -r requirements-dev.txt
 pytest tests/ -v --cov=core --cov-report=term-missing
 ruff check .
+ruff format --check .
+pip-audit -r requirements.txt
 ```
 
 ## 📐 Project Structure
@@ -105,7 +109,8 @@ imdb_top250_scraper/
 ├── requirements-dev.txt
 ├── pyproject.toml        # ruff configuration
 ├── LICENSE
-└── output/               # Generated Excel reports (not committed to git)
+├── output/                # Generated Excel reports (not committed to git)
+└── logs/                  # scraper.log (not committed to git)
 ```
 
 ## ⚠️ Notes on scope and reliability

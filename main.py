@@ -1,14 +1,22 @@
 import argparse
 import logging
+import os
 import sys
 from datetime import datetime
 
 from core.exporter import save_to_excel
 from core.parser import PageFetchError, fetch_page_html, parse_movies
 
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(f"{LOG_DIR}/scraper.log", encoding="utf-8"),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -17,6 +25,12 @@ OUTPUT_DIR = "output"
 
 
 def parse_args() -> argparse.Namespace:
+    """Parses command-line arguments for the scraper.
+
+    Returns:
+        The parsed arguments namespace (url, limit, output, wait_seconds,
+        scroll_pause, max_retries).
+    """
     parser = argparse.ArgumentParser(description="Scrape the IMDb Top 250 chart into an Excel file.")
     parser.add_argument("--url", default=IMDB_URL, help="IMDb chart URL to scrape (default: Top 250)")
     parser.add_argument("--limit", type=int, default=250, help="Max number of movies to keep (default: 250)")
@@ -32,6 +46,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Runs the full scrape → parse → export pipeline.
+
+    Returns:
+        Process exit code: 0 on success, 1 if the page could not be
+        fetched, no movies were parsed, or the Excel export failed.
+    """
     args = parse_args()
 
     try:
